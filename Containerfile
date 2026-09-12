@@ -33,21 +33,22 @@ RUN curl -fL https://github.com/latchset/jose/archive/refs/tags/v${JOSE_VERSION}
  && ninja -C build install \
  && ar rcs /usr/lib/libjose.a build/lib/libjose.so.*.p/*.c.o
 
-# Fetch tang's source before touching any .so files below: the system
-# `curl` binary is itself dynamically linked against libssl/libcrypto/libz,
-# so it breaks the moment those are removed.
 RUN curl -fL https://github.com/latchset/tang/archive/refs/tags/v${TANG_VERSION}.tar.gz | tar xz -C /tmp
 
-# Force the linker below to have no dynamic alternative: drop every .so we
-# just installed, keeping only the .a archives (ours for jose, apk's for
-# jansson/openssl/zlib). meson otherwise resolves these to absolute .so
-# paths via pkg-config even with LDFLAGS=-static.
-RUN rm -f /usr/lib/libjose.so* /usr/lib/libjansson.so* /usr/lib/libssl.so* /usr/lib/libcrypto.so* /usr/lib/libz.so*
+# Build a private static-only library directory + hand-written jose.pc,
+# rather than deleting the system .so files (curl and python/meson are
+# themselves dynamically linked against libz/libssl/libcrypto, so removing
+# those broke the toolchain). jose's real .pc only exposes -lcrypto/-lssl/
+# -lz under a "--static" pkg-config query, which tang's plain
+# dependency('jose', ...) call never makes, so those need to be listed
+# unconditionally here too.
+RUN mkdir -p /opt/staticlibs/pkgconfig \
+ && cp /usr/lib/libjose.a /usr/lib/libjansson.a /usr/lib/libssl.a /usr/lib/libcrypto.a /usr/lib/libz.a /usr/lib/libhttp_parser.a /opt/staticlibs/ \
+ && printf 'libdir=/opt/staticlibs\nincludedir=/usr/include\n\nName: jose\nDescription: static jose\nVersion: %s\nCflags: -I${includedir}\nLibs: -L${libdir} -ljose -ljansson -lssl -lcrypto -lz\n' "${JOSE_VERSION}" > /opt/staticlibs/pkgconfig/jose.pc
 
-# tang - force a fully static link (libjose.a we just built, plus the
-# -static apk packages for jansson/openssl/zlib, plus libhttp_parser.a)
+# tang - force a fully static link against the private static-only libdir
 RUN cd /tmp/tang-${TANG_VERSION} \
- && CFLAGS=-static LDFLAGS=-static meson setup build --prefix=/out \
+ && PKG_CONFIG_LIBDIR=/opt/staticlibs/pkgconfig CFLAGS=-static LDFLAGS=-static meson setup build --prefix=/out \
  && ninja -C build install \
  && strip /out/libexec/tangd \
  && file /out/libexec/tangd
