@@ -6,7 +6,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -23,21 +23,25 @@ jobs:
 
       - name: Build arm64 image
         run: |
+          set -o pipefail
           podman build --platform linux/arm64 \
             -f Containerfile \
             -t ghcr.io/${{ github.repository }}:arm64 \
-            .
+            . 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
 
       - name: Push image
+        if: success()
         run: podman push ghcr.io/${{ github.repository }}:arm64
 
-      - name: Save image as tar artifact (fallback if push fails)
-        if: failure()
-        run: podman save -o tang-arm64.tar ghcr.io/${{ github.repository }}:arm64
-
-      - name: Upload tar artifact
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tang-arm64-image
-          path: tang-arm64.tar
+      - name: Push build log to ci-logs branch
+        if: always()
+        run: |
+          mkdir -p /tmp/logpush && cd /tmp/logpush
+          git init -q
+          git config user.email "ci@example.com"
+          git config user.name "ci-bot"
+          cp "$GITHUB_WORKSPACE/build.log" . 2>/dev/null || echo "no build.log produced" > build.log
+          git add build.log
+          git commit -q -m "build log $(date -u +%FT%TZ)"
+          git branch -M ci-logs
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-logs
