@@ -1,0 +1,16 @@
+[binaries]
+c = '/opt/cross/bin/aarch64-linux-musl-gcc'
+ar = '/opt/cross/bin/aarch64-linux-musl-ar'
+strip = '/opt/cross/bin/aarch64-linux-musl-strip'
+pkg-config = 'pkg-config'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
+
+[properties]
+inc_dir = '-I/opt/sysroot/include'
+lib_dir = '/opt/sysroot/lib'
+needs_exe_wrapper = true
