@@ -1,0 +1,43 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: podman version
+        run: podman version
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build arm64 image
+        run: |
+          podman build --platform linux/arm64 \
+            -f Containerfile \
+            -t ghcr.io/${{ github.repository }}:arm64 \
+            .
+
+      - name: Push image
+        run: podman push ghcr.io/${{ github.repository }}:arm64
+
+      - name: Save image as tar artifact (fallback if push fails)
+        if: failure()
+        run: podman save -o tang-arm64.tar ghcr.io/${{ github.repository }}:arm64
+
+      - name: Upload tar artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tang-arm64-image
+          path: tang-arm64.tar
