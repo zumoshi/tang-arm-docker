@@ -33,6 +33,12 @@ RUN curl -fL https://github.com/latchset/jose/archive/refs/tags/v${JOSE_VERSION}
  && ninja -C build install \
  && ar rcs /usr/lib/libjose.a build/lib/libjose.so.*.p/*.c.o
 
+# Force the linker below to have no dynamic alternative: drop every .so we
+# just installed, keeping only the .a archives (ours for jose, apk's for
+# jansson/openssl/zlib). meson otherwise resolves these to absolute .so
+# paths via pkg-config even with LDFLAGS=-static.
+RUN rm -f /usr/lib/libjose.so* /usr/lib/libjansson.so* /usr/lib/libssl.so* /usr/lib/libcrypto.so* /usr/lib/libz.so*
+
 # tang - force a fully static link (libjose.a we just built, plus the
 # -static apk packages for jansson/openssl/zlib, plus libhttp_parser.a)
 RUN curl -fL https://github.com/latchset/tang/archive/refs/tags/v${TANG_VERSION}.tar.gz | tar xz -C /tmp \
