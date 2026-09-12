@@ -33,6 +33,11 @@ RUN curl -fL https://github.com/latchset/jose/archive/refs/tags/v${JOSE_VERSION}
  && ninja -C build install \
  && ar rcs /usr/lib/libjose.a build/lib/libjose.so.*.p/*.c.o
 
+# Fetch tang's source before touching any .so files below: the system
+# `curl` binary is itself dynamically linked against libssl/libcrypto/libz,
+# so it breaks the moment those are removed.
+RUN curl -fL https://github.com/latchset/tang/archive/refs/tags/v${TANG_VERSION}.tar.gz | tar xz -C /tmp
+
 # Force the linker below to have no dynamic alternative: drop every .so we
 # just installed, keeping only the .a archives (ours for jose, apk's for
 # jansson/openssl/zlib). meson otherwise resolves these to absolute .so
@@ -41,8 +46,7 @@ RUN rm -f /usr/lib/libjose.so* /usr/lib/libjansson.so* /usr/lib/libssl.so* /usr/
 
 # tang - force a fully static link (libjose.a we just built, plus the
 # -static apk packages for jansson/openssl/zlib, plus libhttp_parser.a)
-RUN curl -fL https://github.com/latchset/tang/archive/refs/tags/v${TANG_VERSION}.tar.gz | tar xz -C /tmp \
- && cd /tmp/tang-${TANG_VERSION} \
+RUN cd /tmp/tang-${TANG_VERSION} \
  && CFLAGS=-static LDFLAGS=-static meson setup build --prefix=/out \
  && ninja -C build install \
  && strip /out/libexec/tangd \
