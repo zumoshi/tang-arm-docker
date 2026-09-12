@@ -16,9 +16,6 @@ RUN apk add --no-cache \
     openssl-dev openssl-libs-static \
     zlib-dev zlib-static
 
-ENV CFLAGS=-static \
-    LDFLAGS=-static
-
 # http_parser (tang's fallback HTTP lib; simpler to vendor than llhttp's codegen step)
 RUN curl -fL https://github.com/nodejs/http-parser/archive/refs/tags/v${HTTP_PARSER_VERSION}.tar.gz | tar xz -C /tmp \
  && cd /tmp/http-parser-${HTTP_PARSER_VERSION} \
@@ -27,16 +24,20 @@ RUN curl -fL https://github.com/nodejs/http-parser/archive/refs/tags/v${HTTP_PAR
  && cp libhttp_parser.a /usr/lib/ \
  && cp http_parser.h /usr/include/
 
-# jose
+# jose - upstream meson.build always builds a shared library regardless of
+# --default-library, so build it normally, then archive its already-compiled
+# objects into a static .a ourselves for tang's fully-static link.
 RUN curl -fL https://github.com/latchset/jose/archive/refs/tags/v${JOSE_VERSION}.tar.gz | tar xz -C /tmp \
  && cd /tmp/jose-${JOSE_VERSION} \
- && meson setup build --prefix=/usr --default-library=static \
- && ninja -C build install
+ && meson setup build --prefix=/usr \
+ && ninja -C build install \
+ && ar rcs /usr/lib/libjose.a build/lib/libjose.so.*.p/*.c.o
 
-# tang
+# tang - force a fully static link (libjose.a we just built, plus the
+# -static apk packages for jansson/openssl/zlib, plus libhttp_parser.a)
 RUN curl -fL https://github.com/latchset/tang/archive/refs/tags/v${TANG_VERSION}.tar.gz | tar xz -C /tmp \
  && cd /tmp/tang-${TANG_VERSION} \
- && meson setup build --prefix=/out \
+ && CFLAGS=-static LDFLAGS=-static meson setup build --prefix=/out \
  && ninja -C build install \
  && strip /out/libexec/tangd \
  && file /out/libexec/tangd
