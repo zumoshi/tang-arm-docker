@@ -1,0 +1,132 @@
+=== openssl version ===
+Trying to pull ghcr.io/zumoshi/tang-arm-docker-deps:arm64...
+Getting image source signatures
+Copying blob sha256:f27d67331a7cc4c71b3f4a048c7a1c8e6ad12a66533099d8e12ce4e7288740b6
+Copying blob sha256:418307c36a44a759f0290f77c980c379dce684ce1948a81e13a813285ff536ff
+Copying blob sha256:64abc2b6a5f72037fcf6bbd5ae8198db48a93f77f3febeb5b9b28b44ac034172
+Copying blob sha256:47e49db8b2df15326a0085a4e588bfabe2e4fc7f79dbe905bf5a96dab4ecffa3
+Copying blob sha256:a200f5b2fbb79a0e7851386bc3bceb6374c47336fef59116609b0964d1fc020e
+Copying blob sha256:7b49d88f3d3d4dba4d86154cd2fcf08ff8d46404c4a0e74362ee807b1b4639f9
+Copying config sha256:ddda307163b6d329e80a2ba839234de6c127b12a78785b9ef708f7c1456a3981
+Writing manifest to image destination
+OpenSSL 3.3.2 3 Sep 2024 (Library: OpenSSL 3.3.2 3 Sep 2024)
+built on: Sun Sep 13 07:28:24 2026 UTC
+platform: linux-aarch64
+options:  bn(64,64)
+compiler: gcc -fPIC -pthread -Wa,--noexecstack -Wall -O3 -DOPENSSL_USE_NODELETE -DOPENSSL_PIC -DOPENSSL_BUILDING_OPENSSL -DNDEBUG
+OPENSSLDIR: "/opt/ossl-static/ssl"
+ENGINESDIR: "/opt/ossl-static/lib/engines-3"
+MODULESDIR: "/opt/ossl-static/lib/ossl-modules"
+Seeding source: os-specific
+CPUINFO: OPENSSL_armcap=0x6f7d
+
+=== openssl list -providers (default build-in config) ===
+Providers:
+  default
+    name: OpenSSL Default Provider
+    version: 3.3.2
+    status: active
+
+=== openssl genpkey EC P-521 directly ===
+-----BEGIN PRIVATE KEY-----
+MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIAF6FBs7Rz1TAbmFm6
+XirazpU2RKYr1C0VO2EczpFawMAAZp8c49Zcl45jUKKDmctgOXpZ/lH0CcKjYYHL
++EuynhShgYkDgYYABACeYU5JJ0a04FJJsWSMBDHm3hWdiUvZEV+fVmsk9aYZLPw6
+vs1pJQyLTXDkAopgH/BgMqFgBljU9hByoCvz7s9gxwEPAmdV9OJk1M3rPqCIin0p
+he6WEr+xDrKM4rT5+TsSGVMeSPxdd/beNaVQ50eKzFdms0nhcMaefTFx4SXwINwh
+bg==
+-----END PRIVATE KEY-----
+Private-Key: (521 bit)
+priv:
+    00:17:a1:41:b3:b4:73:d5:30:1b:98:59:ba:5e:2a:
+    da:ce:95:36:44:a6:2b:d4:2d:15:3b:61:1c:ce:91:
+    5a:c0:c0:00:66:9f:1c:e3:d6:5c:97:8e:63:50:a2:
+    83:99:cb:60:39:7a:59:fe:51:f4:09:c2:a3:61:81:
+    cb:f8:4b:b2:9e:14
+pub:
+    04:00:9e:61:4e:49:27:46:b4:e0:52:49:b1:64:8c:
+    04:31:e6:de:15:9d:89:4b:d9:11:5f:9f:56:6b:24:
+    f5:a6:19:2c:fc:3a:be:cd:69:25:0c:8b:4d:70:e4:
+    02:8a:60:1f:f0:60:32:a1:60:06:58:d4:f6:10:72:
+    a0:2b:f3:ee:cf:60:c7:01:0f:02:67:55:f4:e2:64:
+    d4:cd:eb:3e:a0:88:8a:7d:29:85:ee:96:12:bf:b1:
+    0e:b2:8c:e2:b4:f9:f9:3b:12:19:53:1e:48:fc:5d:
+    77:f6:de:35:a5:50:e7:47:8a:cc:57:66:b3:49:e1:
+    70:c6:9e:7d:31:71:e1:25:f0:20:dc:21:6e
+ASN1 OID: secp521r1
+NIST CURVE: P-521
+
+=== jose CLI: jwk gen ES512 (dynamically linked, full ld.so available) ===
+{"alg":"ES512","crv":"P-521","d":"AVTiyiQsUvlMIcwqZw7O_ks2UPFCUPBqC1fuW8STM0FbVommWiSeMfI7l2n5zHRvtadE9UftyEahonVZWOKBOVg-","key_ops":["sign","verify"],"kty":"EC","x":"AFfHOJltybYNmA7uIN6ZHV879ZVWR66VvLhB58ocRKbTuR9xbL6jTPMMNpQPxj8i5rk6CzDWGkhtYQg9xq5ZIVGL","y":"AVX7IF_BhFZTa3dnqTiEQ_cYFVvCMWOqaCNWbCSL5UE5vPsGJq3s0XiI1Q5t2W6zoEPRTMb6SoRODYLeq0MEwyA6"}
+=== jose CLI: jwk gen ES256 (P-256, for comparison) ===
+{"alg":"ES256","crv":"P-256","d":"8cKsWBtr6RubPIaDsfoFoNHnxueFrAvkn_AZEA3XQF0","key_ops":["sign","verify"],"kty":"EC","x":"2tBbGmrUqf8Ek1-Na0gg1hC3feLgTIzW-Wdp_1b_UpM","y":"jkJkIexVXH4QE3p8VJwILbYH1skR_z8NTNnhVNiFfF0"}
+=== A/B test: same static tangd binary, Alpine base instead of scratch ===
+Trying to pull ghcr.io/zumoshi/tang-arm-docker:arm64...
+Getting image source signatures
+Copying blob sha256:7fefb79c2ef49e434afb8a531b4cfe86c127c9827a110155d9b445d4c9b40df0
+Copying blob sha256:52fc6a5107765e754b80e20d630018cab2324d9f59392598deb65685209c87ba
+Copying config sha256:77bcef04466cd1a8a134689be6d5be3821ce5838c63c8fce0e4223348e4a8f3f
+Writing manifest to image destination
+STEP 1/4: FROM alpine:3.21
+Resolved "alpine" as an alias (/etc/containers/registries.conf.d/shortnames.conf)
+Trying to pull docker.io/library/alpine:3.21...
+Getting image source signatures
+Copying blob sha256:2dd7199cff98a7400e801cbfad6de906972a4e3dd0a749d4c1b80f5a1e3e4108
+Copying config sha256:2155344e09b47f8ea09459100e050bed74b5202316318fd0ad0f7f6856089efc
+Writing manifest to image destination
+STEP 2/4: COPY tangd /tangd
+--> 252248760fd5
+STEP 3/4: RUN mkdir -p /db
+--> f726ef018900
+STEP 4/4: ENTRYPOINT ["/tangd", "-l", "-p", "9090", "/db"]
+COMMIT tang-debug:arm64
+--> ee4b7c6a3597
+Successfully tagged localhost/tang-debug:arm64
+ee4b7c6a359706903dfcaac308d95f87dac1b6a4ea3b7e7bb0f2c906b37bc64d
+c78aa77b1706ba340001465cc75d5e90fcd5b30f55d3cd198642d5ac4f5d7b16
+--- tang-debug (alpine base) container log ---
+Listening on 0.0.0.0:9090
+Listening on [::]:9090
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+<unknown> GET /advError generating JWK with alg ES512
+ => 500 (../src/tangd.c:82)
+time="2026-09-13T11:07:57Z" level=warning msg="StopSignal SIGTERM failed to stop container tang-debug in 10 seconds, resorting to SIGKILL"
+tang-debug
+A/B RESULT: still fails under Alpine base -> the bug is in the static tangd binary itself, unrelated to scratch
