@@ -67,31 +67,6 @@ RUN curl -fL https://github.com/latchset/jose/archive/refs/tags/v${JOSE_VERSION}
  && ar rcs /usr/lib/libjose.a build/lib/libjose.so.*.p/*.c.o \
  && rm -rf /tmp/jose-${JOSE_VERSION}
 
-# OpenSSL's built-in "default" provider is registered through a static
-# (file-scoped, not exported) table that lives in its own translation
-# unit. A normal static link only pulls in the .o files needed to
-# resolve symbols something else actually calls; since nothing outside
-# that file can reference the table directly, and our actual call chain
-# (jose_jwk_gen -> EVP_PKEY_CTX_new_from_name -> provider fetch) doesn't
-# happen to touch the one exported function that would pull it in, the
-# linker drops that object file, table and all. This is what caused
-# "Error generating JWK with alg ES512" at runtime, confirmed via an
-# Alpine-vs-scratch A/B test that isolated it to the -static link
-# itself, not the base image or the OpenSSL build.
-#
-# Rather than force-including the whole of libcrypto/libssl/libjose with
-# --whole-archive (works, but disables dead-code elimination for the
-# entire dependency chain, bloating the binary from ~280KB to ~5.7MB),
-# this tiny shim makes one direct, real call to
-# OSSL_PROVIDER_load(NULL, "default") at process startup. That's a
-# genuine function-level reference into the same code path, so the
-# linker includes it through normal symbol resolution, no whole-archive
-# needed for OpenSSL itself. Only this few-hundred-byte shim needs to be
-# force-included, to guarantee the constructor actually runs.
-RUN printf '#include <stdio.h>\n#include <openssl/provider.h>\nstatic void __attribute__((constructor)) force_default_provider(void) {\n    OSSL_PROVIDER *p = OSSL_PROVIDER_load(NULL, "default");\n    fprintf(stderr, "force_default_provider: OSSL_PROVIDER_load returned %%p\\n", (void *)p);\n}\n' > /tmp/force_provider.c \
- && gcc -c /tmp/force_provider.c -I/opt/ossl-static/include -o /tmp/force_provider.o \
- && ar rcs /usr/lib/libforceprovider.a /tmp/force_provider.o
-
 # Private static-only library directory + hand-written jose.pc, rather
 # than deleting the system .so files (curl and python/meson are
 # themselves dynamically linked against libz/libssl/libcrypto, so
@@ -100,10 +75,22 @@ RUN printf '#include <stdio.h>\n#include <openssl/provider.h>\nstatic void __att
 # query, which tang's plain dependency('jose', ...) call never makes, so
 # those need to be listed unconditionally here too.
 #
-# Only libforceprovider is wrapped in --whole-archive (see the comment
-# above where it's built), so it's guaranteed to be linked in regardless
-# of whether anything else directly references its one symbol. Everything
-# else links normally, full dead-code elimination intact.
+# jose has its own internal hook-based algorithm registry
+# (jose_hook_alg_find), separate from OpenSSL's own provider system.
+# Each algorithm implementation (lib/openssl/ec.c etc.) self-registers
+# into it, and hits the exact same static-linking problem: nothing
+# outside that translation unit references it directly, so the linker
+# drops it. This is a known class of bug in jose itself (see e.g. its
+# v12 changelog: "lib/openssl/rsaes.c: Fix issue where
+# jose_hook_alg_find failed to find the existence of RSA_OAEP
+# algorithm"), just not one their fix covers for a static link.
+# An earlier attempt assumed this was OpenSSL's own provider
+# registration and added an explicit OSSL_PROVIDER_load(NULL,
+# "default") shim; a debug build proved that call already succeeds
+# fine on its own, so the failure was never in OpenSSL. --whole-archive
+# only libjose here (small, unlike the full OpenSSL static libs) so
+# jose's self-registration always runs, while jansson/openssl/zlib
+# keep normal dead-code elimination.
 RUN mkdir -p /opt/staticlibs/pkgconfig \
- && cp /usr/lib/libjose.a /usr/lib/libjansson.a /opt/ossl-static/lib/libssl.a /opt/ossl-static/lib/libcrypto.a /usr/lib/libz.a /usr/lib/libhttp_parser.a /usr/lib/libforceprovider.a /opt/staticlibs/ \
- && printf 'libdir=/opt/staticlibs\nincludedir=/usr/include\n\nName: jose\nDescription: static jose\nVersion: %s\nCflags: -I${includedir}\nLibs: -L${libdir} -Wl,--whole-archive -lforceprovider -Wl,--no-whole-archive -ljose -ljansson -lssl -lcrypto -lz\n' "${JOSE_VERSION}" > /opt/staticlibs/pkgconfig/jose.pc
+ && cp /usr/lib/libjose.a /usr/lib/libjansson.a /opt/ossl-static/lib/libssl.a /opt/ossl-static/lib/libcrypto.a /usr/lib/libz.a /usr/lib/libhttp_parser.a /opt/staticlibs/ \
+ && printf 'libdir=/opt/staticlibs\nincludedir=/usr/include\n\nName: jose\nDescription: static jose\nVersion: %s\nCflags: -I${includedir}\nLibs: -L${libdir} -Wl,--whole-archive -ljose -Wl,--no-whole-archive -ljansson -lssl -lcrypto -lz\n' "${JOSE_VERSION}" > /opt/staticlibs/pkgconfig/jose.pc
