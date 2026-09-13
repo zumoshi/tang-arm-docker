@@ -1,0 +1,105 @@
+[1/2] STEP 1/3: FROM ghcr.io/zumoshi/tang-arm-docker-deps:arm64 AS build
+Trying to pull ghcr.io/zumoshi/tang-arm-docker-deps:arm64...
+Getting image source signatures
+Copying blob sha256:1b0e25c604428faf196d76b41d0227cdd76ca64ef07c5e2d53038dabc847a8d6
+Copying blob sha256:f27d67331a7cc4c71b3f4a048c7a1c8e6ad12a66533099d8e12ce4e7288740b6
+Copying blob sha256:65e50dac9165ba219eb393ddc582d8df15b3ec67cbd211e6803b8dceaf930765
+Copying blob sha256:86bef2b0e991a79f7ddad5955331151014700ccd8dfed8de025d70b15068500d
+Copying blob sha256:bab1109b3dffe006beab351d85d90037acb9ffcd6b09abfc0b80969756a56172
+Copying blob sha256:f4134c8a85b676a8cf8ce4a72d4d47a6207aaa3928c5ce29cac6a85563ad647e
+Copying config sha256:0d184c8f0da26c4db6bfdc1ecb2d9696725c2182231d5cef539f09f23656c133
+Writing manifest to image destination
+[1/2] STEP 2/3: ARG TANG_VERSION
+--> 844598e79689
+[1/2] STEP 3/3: RUN curl -fL https://github.com/latchset/tang/archive/refs/tags/v${TANG_VERSION}.tar.gz | tar xz -C /tmp  && cd /tmp/tang-${TANG_VERSION}  && PKG_CONFIG_LIBDIR=/opt/staticlibs/pkgconfig CFLAGS=-static LDFLAGS=-static meson setup build --prefix=/out  && ninja -C build install  && strip /out/libexec/tangd  && file /out/libexec/tangd  && mkdir -p /out/db
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 43465    0 43465    0     0  46927      0 --:--:-- --:--:-- --:--:-- 46927
+The Meson build system
+Version: 1.6.1
+Source dir: /tmp/tang-15
+Build dir: /tmp/tang-15/build
+Build type: native build
+Project name: tang
+Project version: 15
+C compiler for the host machine: cc (gcc 14.2.0 "cc (Alpine 14.2.0) 14.2.0")
+C linker for the host machine: cc ld.bfd 2.43.1
+Host machine cpu family: aarch64
+Host machine cpu: aarch64
+Found pkg-config: YES (/usr/bin/pkg-config) 2.3.0
+Run-time dependency jose found: YES 14
+Program a2x found: NO
+Has header "llhttp.h" : NO 
+Has header "http_parser.h" : YES 
+Library http_parser found: YES
+Configuring tangd-keygen using configuration
+Configuring tangd-rotate-keys using configuration
+Configuring tangd@.service using configuration
+Configuring tangd.socket using configuration
+tests/meson.build:6: WARNING: Project does not target a minimum version but uses feature deprecated since '0.56.0': meson.source_root. use meson.project_source_root() or meson.global_source_root() instead.
+Configuring test-keys.c using configuration
+Program socat found: NO
+tests/meson.build:28: WARNING: Project does not target a minimum version but uses feature deprecated since '0.56.0': meson.source_root. use meson.project_source_root() or meson.global_source_root() instead.
+tests/meson.build:29: WARNING: Project does not target a minimum version but uses feature deprecated since '0.56.0': meson.build_root. use meson.project_build_root() or meson.global_build_root() instead.
+tests/meson.build:30: WARNING: Project does not target a minimum version but uses feature deprecated since '0.56.0': meson.source_root. use meson.project_source_root() or meson.global_source_root() instead.
+tests/meson.build:31: WARNING: Project does not target a minimum version but uses feature deprecated since '0.56.0': meson.build_root. use meson.project_build_root() or meson.global_build_root() instead.
+Program adv-standalone found: YES (/bin/sh -ex /tmp/tang-15/tests/adv-standalone)
+Program adv-standalone-endpoint found: YES (/bin/sh -ex /tmp/tang-15/tests/adv-standalone-endpoint)
+Program adv-socat found: YES (/tmp/tang-15/tests/adv-socat)
+Program adv-socat-endpoint found: YES (/bin/sh -ex /tmp/tang-15/tests/adv-socat-endpoint)
+Program rec-standalone found: YES (/tmp/tang-15/tests/rec-standalone)
+Program rec-standalone-endpoint found: YES (/tmp/tang-15/tests/rec-standalone-endpoint)
+Program rec-socat found: YES (/tmp/tang-15/tests/rec-socat)
+Program rec-socat-endpoint found: YES (/bin/sh -ex /tmp/tang-15/tests/rec-socat-endpoint)
+meson.build:101: WARNING: Will not build man pages due to missing a2x (asciidoc) dependency!
+Build targets in project: 2
+WARNING: Deprecated features used:
+ * 0.56.0: {'meson.build_root', 'meson.source_root'}
+
+tang 15
+
+  User defined options
+    prefix: /out
+
+Found ninja-1.9 at /usr/bin/ninja
+ninja: entering directory 'build'
+[1/9] Compiling C object src/tangd.p/socket.c.o
+[2/9] Compiling C object src/tangd.p/tangd.c.o
+[3/9] Compiling C object src/tangd.p/keys.c.o
+[4/9] Compiling C object src/tangd.p/http.c.o
+[5/9] Compiling C object tests/test-keys.p/test-util.c.o
+[6/9] Compiling C object tests/test-keys.p/meson-generated_.._test-keys.c.o
+[7/9] Linking target src/tangd
+[8/9] Linking target tests/test-keys
+[9/9] Installing files.
+Installing src/tangd to /out/libexec
+Installing /tmp/tang-15/build/src/tangd-keygen to /out/libexec
+Installing /tmp/tang-15/build/src/tangd-rotate-keys to /out/libexec
+Installing /tmp/tang-15/src/tang-show-keys to /out/bin
+Installing /tmp/tang-15/build/units/tangd.socket to /out/lib/systemd/system
+Installing /tmp/tang-15/build/units/tangd@.service to /out/lib/systemd/system
+Installing /tmp/tang-15/COPYING to /out/share/licenses/tang
+/out/libexec/tangd: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, BuildID[sha1]=0717f7ec2003b71fb1909881ecc3497f6a8b002d, stripped
+--> 73a4e8360015
+[2/2] STEP 1/4: FROM scratch
+[2/2] STEP 2/4: COPY --from=build /out/libexec/tangd /tangd
+--> bc9963807cfa
+[2/2] STEP 3/4: COPY --from=build /out/db /db
+--> 9da2d30dade7
+[2/2] STEP 4/4: ENTRYPOINT ["/tangd", "-l", "-p", "9090", "/db"]
+[2/2] COMMIT ghcr.io/zumoshi/tang-arm-docker:arm64
+--> 1519ac9169e8
+Successfully tagged ghcr.io/zumoshi/tang-arm-docker:arm64
+1519ac9169e85440c523b18f573f338d4eb7349cebc2e724ed6c3ab163e57ea8
+WARNING: image platform (linux/arm64) does not match the expected platform (linux/amd64)
+af2978fb8174ea0be8d0ca2536ce7a1db73ec072dd95216a74c52300e26de7c6
+--- container log ---
+Listening on 0.0.0.0:9090
+Listening on [::]:9090
+<unknown> GET /adv => 200 (../src/tangd.c:101)
+time="2026-09-13T13:39:55Z" level=warning msg="StopSignal SIGTERM failed to stop container tang-smoketest in 10 seconds, resorting to SIGKILL"
+tang-smoketest
+--- /adv response ---
+{"payload": "eyJrZXlzIjogW3siYWxnIjogIkVDTVIiLCAia3R5IjogIkVDIiwgImNydiI6ICJQLTUyMSIsICJ4IjogIkFVZFJYbjBsdlY0NXJGSnV6SHpmWjdlbjg2NnpfYjJMTGxUbnNoSHNJUHVNRTVEdkc0RjZVbnVQbkhnZzZWSXdCUndUVU1DQUZYbk9PSWp2MXI5YVBRSFoiLCAieSI6ICJBR2ZtdFB1MVk1RnpReEdfajJBeV9vTHk1U3J4cGhiMEdyZVQ4RjAtbjA2T2djejlaU3VtNm9ndGMyVU1EOVE0eGVUTW1TdTQ3ZG9pbGhqMnY4dDYxYnpIIiwgImtleV9vcHMiOiBbImRlcml2ZUtleSJdfSwgeyJhbGciOiAiRVM1MTIiLCAia3R5IjogIkVDIiwgImNydiI6ICJQLTUyMSIsICJ4IjogIkFWc3Z4TWtFazJ1OFBuSDRULTRrNmF6S0xLbDJIYUo0QnAtX0M5c0ZiMVN6aDNKcWFXdGYxTkFoOXMxRXUwZmd4WEgwamwzQVBFbmdVNmlES19WSV9CSTYiLCAieSI6ICJBYWpzY3pTWEdheHlBWk45TGhid1BzQ1loYnc3dU9ueU05MHJnN0x1Mmx1bU5MdmYwbjBqMWZIOVc5TnJNSlVJQWVJYVdhQ1RPdnk4R1BkVkZZS2xpY0o5IiwgImtleV9vcHMiOiBbInZlcmlmeSJdfV19", "protected": "eyJhbGciOiJFUzUxMiIsImN0eSI6Imp3ay1zZXQranNvbiJ9", "signature": "AG6IglBG6OSzFGexMPdANd1P5jgY1UXsQ3nClcVMv2DE4E0NiqA1QnnyaQ-RxpB9zkzPBnLwO6otQo9Gpw5eq776AUFuIhL5ZCbabSJGt7MYjaECN_VDeOdMg05Y8E44vmIz0fSi3LisLbQ2vgIqbo1C6pSzjuqB7RLV4teWJBEE0oBi"}
+Smoke test passed
