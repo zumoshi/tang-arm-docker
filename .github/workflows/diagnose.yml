@@ -51,12 +51,7 @@ jobs:
           mkdir -p /tmp/dbgctx
           podman cp "$cid":/tangd /tmp/dbgctx/tangd
           podman rm "$cid" >/dev/null
-          cat > /tmp/dbgctx/Containerfile <<'INNEREOF'
-FROM alpine:3.21
-COPY tangd /tangd
-RUN mkdir -p /db
-ENTRYPOINT ["/tangd", "-l", "-p", "9090", "/db"]
-INNEREOF
+          printf 'FROM alpine:3.21\nCOPY tangd /tangd\nRUN mkdir -p /db\nENTRYPOINT ["/tangd", "-l", "-p", "9090", "/db"]\n' > /tmp/dbgctx/Containerfile
           podman build --platform linux/arm64 -f /tmp/dbgctx/Containerfile -t tang-debug:arm64 /tmp/dbgctx
 
           mkdir -p /tmp/dbg-db
@@ -96,4 +91,3 @@ INNEREOF
           git commit -q -m "diagnostic log $(date -u +%FT%TZ)"
           git branch -M ci-logs-diag
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-logs-diag
-# retrigger registration 1789297530
