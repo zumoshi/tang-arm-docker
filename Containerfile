@@ -51,8 +51,10 @@ RUN cd /tmp/tang-${TANG_VERSION} \
  && PKG_CONFIG_LIBDIR=/opt/staticlibs/pkgconfig CFLAGS=-static LDFLAGS=-static meson setup build --prefix=/out \
  && ninja -C build install \
  && strip /out/libexec/tangd \
- && file /out/libexec/tangd
+ && file /out/libexec/tangd \
+ && mkdir -p /out/db
 
 FROM scratch
 COPY --from=build /out/libexec/tangd /tangd
-ENTRYPOINT ["/tangd", "-l", "-p", "9090"]
+COPY --from=build /out/db /db
+ENTRYPOINT ["/tangd", "-l", "-p", "9090", "/db"]
