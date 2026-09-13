@@ -3,6 +3,9 @@ name: build
 on:
   push:
     branches: [main]
+    paths:
+      - Containerfile
+      - .github/workflows/build.yml
   workflow_dispatch: {}
 
 permissions:
@@ -33,6 +36,45 @@ jobs:
             -f Containerfile \
             -t ghcr.io/${{ github.repository }}:arm64 \
             . 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+
+      # Runs the actual freshly built arm64 image (under the same QEMU
+      # emulation as the build) against a throwaway /db, and hits /adv.
+      # This exercises tang's real first-run key-generation path, the
+      # exact thing that silently broke ("Error generating JWK with alg
+      # ES512") and only showed up once running on the router. Discarded
+      # regardless of outcome; the point is to fail the CI job here
+      # instead of finding out after a repull on hardware.
+      - name: Smoke test - key generation and /adv
+        run: |
+          set -o pipefail
+          mkdir -p /tmp/smoketest-db
+          podman run -d --name tang-smoketest \
+            -p 127.0.0.1:19090:9090 \
+            -v /tmp/smoketest-db:/db \
+            ghcr.io/${{ github.repository }}:arm64
+
+          ok=0
+          for i in $(seq 1 20); do
+            sleep 1
+            if curl -sf http://127.0.0.1:19090/adv -o /tmp/adv.json; then
+              ok=1
+              break
+            fi
+          done
+
+          echo "--- container log ---"
+          podman logs tang-smoketest || true
+          podman rm -f tang-smoketest || true
+          rm -rf /tmp/smoketest-db
+
+          if [ "$ok" -ne 1 ]; then
+            echo "Smoke test failed: /adv did not return 200 within 20s"
+            exit 1
+          fi
+          echo "--- /adv response ---"
+          cat /tmp/adv.json
+          echo
+          echo "Smoke test passed"
 
       - name: Push image
         if: success()

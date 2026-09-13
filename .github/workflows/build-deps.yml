@@ -1,0 +1,52 @@
+name: build-deps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Containerfile.deps
+      - .github/workflows/build-deps.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU (arm64)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build deps image
+        run: |
+          set -o pipefail
+          podman build --platform linux/arm64 \
+            -f Containerfile.deps \
+            -t ghcr.io/${{ github.repository_owner }}/tang-arm-docker-deps:arm64 \
+            . 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+
+      - name: Push deps image
+        if: success()
+        run: podman push ghcr.io/${{ github.repository_owner }}/tang-arm-docker-deps:arm64
+
+      - name: Push build log to ci-logs branch
+        if: always()
+        run: |
+          mkdir -p /tmp/logpush && cd /tmp/logpush
+          git init -q
+          git config user.email "ci@example.com"
+          git config user.name "ci-bot"
+          cp "$GITHUB_WORKSPACE/build.log" deps-build.log 2>/dev/null || echo "no build.log produced" > deps-build.log
+          git add deps-build.log
+          git commit -q -m "deps build log $(date -u +%FT%TZ)"
+          git branch -M ci-logs-deps
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-logs-deps
