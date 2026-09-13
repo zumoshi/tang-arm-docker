@@ -74,6 +74,20 @@ RUN curl -fL https://github.com/latchset/jose/archive/refs/tags/v${JOSE_VERSION}
 # .pc only exposes -lcrypto/-lssl/-lz under a "--static" pkg-config
 # query, which tang's plain dependency('jose', ...) call never makes, so
 # those need to be listed unconditionally here too.
+#
+# --whole-archive/--no-whole-archive around the whole list: OpenSSL's
+# default provider (and possibly jose's own algorithm table) registers
+# itself via a constructor function at process startup. A normal static
+# link only pulls in the .o files needed to resolve symbols actually
+# referenced elsewhere; if a translation unit's only visible effect is
+# its constructor, the linker can drop it, silently skipping that
+# registration. This is what caused "Error generating JWK with alg
+# ES512" at runtime even with a fully working no-shared OpenSSL build:
+# confirmed via an Alpine-vs-scratch A/B test that it was the -static
+# link itself, not the base image, and openssl/jose CLIs worked fine
+# dynamically linked against the identical library code. whole-archive
+# forces every object file from these archives to be included
+# regardless of whether anything else references it.
 RUN mkdir -p /opt/staticlibs/pkgconfig \
  && cp /usr/lib/libjose.a /usr/lib/libjansson.a /opt/ossl-static/lib/libssl.a /opt/ossl-static/lib/libcrypto.a /usr/lib/libz.a /usr/lib/libhttp_parser.a /opt/staticlibs/ \
- && printf 'libdir=/opt/staticlibs\nincludedir=/usr/include\n\nName: jose\nDescription: static jose\nVersion: %s\nCflags: -I${includedir}\nLibs: -L${libdir} -ljose -ljansson -lssl -lcrypto -lz\n' "${JOSE_VERSION}" > /opt/staticlibs/pkgconfig/jose.pc
+ && printf 'libdir=/opt/staticlibs\nincludedir=/usr/include\n\nName: jose\nDescription: static jose\nVersion: %s\nCflags: -I${includedir}\nLibs: -L${libdir} -Wl,--whole-archive -ljose -ljansson -lssl -lcrypto -lz -Wl,--no-whole-archive\n' "${JOSE_VERSION}" > /opt/staticlibs/pkgconfig/jose.pc
