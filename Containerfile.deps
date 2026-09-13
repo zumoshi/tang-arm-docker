@@ -88,7 +88,7 @@ RUN curl -fL https://github.com/latchset/jose/archive/refs/tags/v${JOSE_VERSION}
 # linker includes it through normal symbol resolution, no whole-archive
 # needed for OpenSSL itself. Only this few-hundred-byte shim needs to be
 # force-included, to guarantee the constructor actually runs.
-RUN printf '#include <openssl/provider.h>\nstatic void __attribute__((constructor)) force_default_provider(void) {\n    OSSL_PROVIDER_load(NULL, "default");\n}\n' > /tmp/force_provider.c \
+RUN printf '#include <stdio.h>\n#include <openssl/provider.h>\nstatic void __attribute__((constructor)) force_default_provider(void) {\n    OSSL_PROVIDER *p = OSSL_PROVIDER_load(NULL, "default");\n    fprintf(stderr, "force_default_provider: OSSL_PROVIDER_load returned %%p\\n", (void *)p);\n}\n' > /tmp/force_provider.c \
  && gcc -c /tmp/force_provider.c -I/opt/ossl-static/include -o /tmp/force_provider.o \
  && ar rcs /usr/lib/libforceprovider.a /tmp/force_provider.o
 
