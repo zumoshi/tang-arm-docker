@@ -47,6 +47,7 @@ jobs:
       - name: Smoke test - key generation and /adv
         run: |
           set -o pipefail
+          {
           mkdir -p /tmp/smoketest-db
           podman run -d --name tang-smoketest \
             -p 127.0.0.1:19090:9090 \
@@ -75,6 +76,9 @@ jobs:
           cat /tmp/adv.json
           echo
           echo "Smoke test passed"
+          } 2>&1 | tee -a "$GITHUB_WORKSPACE/build.log"
+          # tee always exits 0; surface the real exit code of the block above.
+          exit "${PIPESTATUS[0]}"
 
       - name: Push image
         if: success()
