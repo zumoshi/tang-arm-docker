@@ -1,0 +1,60 @@
+name: diagnose
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU (arm64)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Diagnose EC/ES512 key generation
+        run: |
+          set -o pipefail
+          {
+          echo "=== openssl version ==="
+          podman run --rm --platform linux/arm64 --entrypoint /opt/ossl-static/bin/openssl \
+            ghcr.io/zumoshi/tang-arm-docker-deps:arm64 version -a
+
+          echo
+          echo "=== openssl list -providers (default build-in config) ==="
+          podman run --rm --platform linux/arm64 --entrypoint /opt/ossl-static/bin/openssl \
+            ghcr.io/zumoshi/tang-arm-docker-deps:arm64 list -providers || true
+
+          echo
+          echo "=== openssl genpkey EC P-521 directly ==="
+          podman run --rm --platform linux/arm64 --entrypoint /opt/ossl-static/bin/openssl \
+            ghcr.io/zumoshi/tang-arm-docker-deps:arm64 genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-521 -text || true
+
+          echo
+          echo "=== jose CLI: jwk gen ES512 (dynamically linked, full ld.so available) ==="
+          podman run --rm --platform linux/arm64 --entrypoint /usr/bin/jose \
+            ghcr.io/zumoshi/tang-arm-docker-deps:arm64 jwk gen -i '{"alg":"ES512"}' || true
+
+          echo
+          echo "=== jose CLI: jwk gen ES256 (P-256, for comparison) ==="
+          podman run --rm --platform linux/arm64 --entrypoint /usr/bin/jose \
+            ghcr.io/zumoshi/tang-arm-docker-deps:arm64 jwk gen -i '{"alg":"ES256"}' || true
+          } 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+
+      - name: Push diagnostic log to ci-logs-diag branch
+        if: always()
+        run: |
+          mkdir -p /tmp/logpush && cd /tmp/logpush
+          git init -q
+          git config user.email "ci@example.com"
+          git config user.name "ci-bot"
+          cp "$GITHUB_WORKSPACE/build.log" diag.log 2>/dev/null || echo "no build.log produced" > diag.log
+          git add diag.log
+          git commit -q -m "diagnostic log $(date -u +%FT%TZ)"
+          git branch -M ci-logs-diag
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-logs-diag
