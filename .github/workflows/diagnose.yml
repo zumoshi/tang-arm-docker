@@ -44,6 +44,44 @@ jobs:
           echo "=== jose CLI: jwk gen ES256 (P-256, for comparison) ==="
           podman run --rm --platform linux/arm64 --entrypoint /usr/bin/jose \
             ghcr.io/zumoshi/tang-arm-docker-deps:arm64 jwk gen -i '{"alg":"ES256"}' || true
+
+          echo
+          echo "=== A/B test: same static tangd binary, Alpine base instead of scratch ==="
+          cid=$(podman create --platform linux/arm64 ghcr.io/zumoshi/tang-arm-docker:arm64)
+          mkdir -p /tmp/dbgctx
+          podman cp "$cid":/tangd /tmp/dbgctx/tangd
+          podman rm "$cid" >/dev/null
+          cat > /tmp/dbgctx/Containerfile <<'INNEREOF'
+FROM alpine:3.21
+COPY tangd /tangd
+RUN mkdir -p /db
+ENTRYPOINT ["/tangd", "-l", "-p", "9090", "/db"]
+INNEREOF
+          podman build --platform linux/arm64 -f /tmp/dbgctx/Containerfile -t tang-debug:arm64 /tmp/dbgctx
+
+          mkdir -p /tmp/dbg-db
+          podman run -d --name tang-debug --platform linux/arm64 \
+            -p 127.0.0.1:19091:9090 \
+            -v /tmp/dbg-db:/db \
+            tang-debug:arm64
+          ok2=0
+          for i in $(seq 1 20); do
+            sleep 1
+            if curl -sf http://127.0.0.1:19091/adv -o /tmp/adv2.json; then
+              ok2=1
+              break
+            fi
+          done
+          echo "--- tang-debug (alpine base) container log ---"
+          podman logs tang-debug || true
+          podman rm -f tang-debug || true
+          rm -rf /tmp/dbg-db
+          if [ "$ok2" -eq 1 ]; then
+            echo "A/B RESULT: works fine under Alpine base -> the bug is about the scratch environment, not static linking itself"
+            cat /tmp/adv2.json
+          else
+            echo "A/B RESULT: still fails under Alpine base -> the bug is in the static tangd binary itself, unrelated to scratch"
+          fi
           } 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
 
       - name: Push diagnostic log to ci-logs-diag branch
