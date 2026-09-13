@@ -13,7 +13,7 @@ ARG HTTP_PARSER_VERSION
 ARG TANG_VERSION
 
 RUN apk add --no-cache \
-    build-base curl meson ninja pkgconf perl \
+    build-base curl meson ninja pkgconf perl linux-headers \
     jansson-dev jansson-static \
     zlib-dev zlib-static
 
